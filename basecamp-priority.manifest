@@ -1,0 +1,10 @@
+{
+  "id": "taist-basecamp-priority",
+  "js": "basecamp-priority.js",
+  "css": "basecamp-priority.css",
+  "title": "Basecamp priority",
+  "siteName": "Basecamp",
+  "siteRegexp": "basecamp.com",
+  "shortDescription": "Taist personal priorities addon",
+  "description": "basecamp-priority.md"
+}
