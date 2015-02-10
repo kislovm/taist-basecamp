@@ -12,7 +12,11 @@
     margin-left: 5px;
 }
 
-.priority-select a {
+div.priority-select a {
     margin: 0 5px;
+    text-decoration: underline;
+}
+
+div.priority-select a:hover {
     text-decoration: underline;
 }
