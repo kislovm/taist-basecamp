@@ -32,7 +32,27 @@ function init() {
         return todos;
     }
 
-    function render() { }
+    function render() {
+        Object.keys(cache).forEach(function(id) {
+            var todo = storage.get(id),
+                balloon;
+
+            if(!todo.priority) {
+                balloon = $('<span>')
+                    .attr({
+                        class: 'pill has-balloon priority blank',
+                        'data-behavior': 'hover_content expandable',
+                        'data-hovercontent-strategy': 'visibility'
+                    })
+                    .css({
+                        visibility: 'hidden'
+                    })
+                    .text('Set priority');
+            }
+
+            cache[id].find('.wrapper').append(balloon);
+        });
+    }
 
     storage = {
 
@@ -45,6 +65,10 @@ function init() {
             $.extend(this.todos, todos);
 
             this.save(callback);
+        },
+
+        get: function(id) {
+            return this.todos[id];
         },
 
         init: function(api, todos, callback) {
