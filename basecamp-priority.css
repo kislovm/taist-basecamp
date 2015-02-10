@@ -1,3 +1,18 @@
 .priority {
     cursor: pointer;
 }
+
+.priority-baloon {
+    height: 30px;
+    padding-top: 30px;
+}
+
+.priority-select {
+    display: inline-block;
+    margin-left: 5px;
+}
+
+.priority-select a {
+    margin: 0 5px;
+    text-decoration: underline;
+}

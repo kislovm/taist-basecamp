@@ -41,18 +41,25 @@ function init() {
             if(!todo.priority) {
                 balloon = $('<span>')
                     .attr({
-                        class: 'pill has-balloon priority blank',
+                        class: 'pill has_balloon priority blank',
                         'data-behavior': 'hover_content expandable',
                         'data-hovercontent-strategy': 'visibility'
                     })
                     .css({
                         visibility: 'hidden'
                     })
-                    .text('Set priority');
+                    .append($('<a data-behavior="expand_on_click">').text('Set priority'))
+                    .append(
+                        $('<span class="balloon right_side expanded_content priority-baloon">')
+                            .append($('<span class="arrow">'))
+                            .append($('<span class="arrow">'))
+                            .append($('<label>Set priority</label>'))
+                            .append($('<div class="priority-select">(<a href="#">1</a> | <a href="#">2</a> | <a href="#">3</a>)</div>')))
+
             } else {
                 balloon = $('<span>')
                     .attr({
-                        class: 'pill has-balloon priority',
+                        class: 'pill has_balloon priority',
                         'data-behavior': 'expandable'
                     })
                     .text('Priority: ' + todo.priority);
