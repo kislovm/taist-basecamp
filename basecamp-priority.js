@@ -64,7 +64,7 @@ function init() {
                 balloon = $('<span>')
                     .attr({
                         class: 'pill has_balloon priority',
-                        'data-behavior': 'expandable'
+                        'data-behavior': 'expandable expand_exclusively'
                     })
                     .append($('<a href="#" data-behavior="expand_on_click">').text('Priority: ' + todo.priority))
                     .append(popup);
