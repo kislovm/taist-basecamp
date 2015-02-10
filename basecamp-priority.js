@@ -6,6 +6,10 @@ function init() {
     function init(api) {
         storage.init(api, parse(), render);
 
+        $('.todolists')
+            .prepend('<div class="priority-sort" >' +
+                '<input type="checkbox"id="priority-sort"><label for="priority-sort">Sort by priority</label>' +
+            '</div>');
     }
 
     function parse() {

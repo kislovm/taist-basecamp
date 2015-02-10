@@ -16,3 +16,14 @@ div.priority-select a {
 div.priority-select a:hover {
     text-decoration: underline;
 }
+
+.priority-sort {
+    position: absolute;
+    right:5px;
+    top: -10px;
+    z-index: 999;
+}
+
+.priority-sort input {
+    margin: 5px;
+}
