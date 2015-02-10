@@ -4,7 +4,14 @@ function init() {
 
 
     function init(api) {
-        storage.init(api, parse(), render);
+        storage.init(api, parse(), function() {
+            render();
+
+            api.wait.elementRender('.todo:not(.processed)', function() {
+                storage.add(parse(), render);
+            });
+
+        });
 
         $('.todolists')
             .prepend('<div class="priority-sort" >' +
@@ -84,7 +91,10 @@ function init() {
             e.preventDefault();
 
             storage.change($el.data('id'), $el.data('val'), render);
-        })
+        });
+
+        $('.todo').addClass('processed');
+
     }
 
     storage = {
