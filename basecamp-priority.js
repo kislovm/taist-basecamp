@@ -22,7 +22,6 @@ function init() {
                         todoId = $el.attr('id').split('_')[1];
 
                     cache[todoId] = $el; //сильно ускоряющий костыль
-
                     todos[todoId] = ({ priority: 0, todolist: todolistId });
                 });
 
@@ -87,12 +86,13 @@ function init() {
     storage = {
 
         save: function(callback) {
-
             this.storage.set('todos', this.todos, callback);
         },
 
         add: function(todos, callback) {
             $.extend(todos, this.todos);
+
+            this.todos = todos;
 
             this.save(callback);
         },
