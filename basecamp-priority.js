@@ -9,7 +9,7 @@ function init() {
     }
 
     function parse() {
-        var todolists = $('.todolist:not(.new)'),
+        var todolists = $('article.todolist:not(.new)'),
             todos = {};
 
         if(todolists.length) {
@@ -33,9 +33,19 @@ function init() {
     }
 
     function render() {
+
         Object.keys(cache).forEach(function(id) {
             var todo = storage.get(id),
-                balloon;
+                balloon,
+                popup = $('<span class="balloon right_side expanded_content priority-baloon">')
+                    .append($('<span class="arrow">'))
+                    .append($('<span class="arrow">'))
+                    .append($('<label>Set priority</label>'))
+                    .append($('<div class="priority-select">(' +
+                        [1,2,3].map(function(i) {
+                            return '<a href="#" data-id="' + id + '" data-val="'+ i +'">' + i + '</a>'
+                        }) +
+                    ')</div>'));
 
 
             if(!todo.priority) {
@@ -49,12 +59,7 @@ function init() {
                         visibility: 'hidden'
                     })
                     .append($('<a href="#" data-behavior="expand_on_click">').text('Set priority'))
-                    .append(
-                        $('<span class="balloon right_side expanded_content priority-baloon">')
-                            .append($('<span class="arrow">'))
-                            .append($('<span class="arrow">'))
-                            .append($('<label>Set priority</label>'))
-                            .append($('<div class="priority-select">(<a href="#">1</a> | <a href="#">2</a> | <a href="#">3</a>)</div>')))
+                    .append(popup)
 
             } else {
                 balloon = $('<span>')
@@ -62,11 +67,21 @@ function init() {
                         class: 'pill has_balloon priority',
                         'data-behavior': 'expandable'
                     })
-                    .text('Priority: ' + todo.priority);
+                    .append($('<a href="#" data-behavior="expand_on_click">').text('Priority: ' + todo.priority))
+                    .append(popup);
             }
 
+            cache[id].find('.priority').remove();
             cache[id].find('.wrapper').append(balloon);
         });
+
+        $('.priority-baloon a').click(function(e) {
+            var $el = $(e.target);
+
+            e.preventDefault();
+
+            storage.change($el.data('id'), $el.data('val'), render);
+        })
     }
 
     storage = {
@@ -77,7 +92,13 @@ function init() {
         },
 
         add: function(todos, callback) {
-            $.extend(this.todos, todos);
+            $.extend(todos, this.todos);
+
+            this.save(callback);
+        },
+
+        change: function(id, priority, callback) {
+            this.todos[id].priority = priority;
 
             this.save(callback);
         },
