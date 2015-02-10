@@ -27,3 +27,7 @@ div.priority-select a:hover {
 .priority-sort input {
     margin: 5px;
 }
+
+.new-todolist-disabled {
+    background: #ccc;
+}

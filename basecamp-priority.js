@@ -4,6 +4,8 @@ function init() {
 
 
     function init(api) {
+        var checkbox;
+
         storage.init(api, parse(), function() {
             render();
 
@@ -16,11 +18,18 @@ function init() {
         $('.todolists')
             .prepend('<div class="priority-sort" >' +
                 '<input type="checkbox" id="priority-sort"><label for="priority-sort">Sort by priority</label>' +
-            '</div>');
+            '</div>')
+            .prepend('<article class="todolist priority-sorted"><ul class="todos"></article>');
+
+        checkbox = $('#priority-sort');
+
+        checkbox.change(function() {
+            checkbox.is(':checked') ? renderSorted() : renderList();
+        });
     }
 
     function parse() {
-        var todolists = $('article.todolist:not(.new)'),
+        var todolists = $('article.todolist:not(.new):not(.priority-sorted)'),
             todos = {};
 
         if(todolists.length) {
@@ -32,7 +41,7 @@ function init() {
                     var $el = $(el),
                         todoId = $el.attr('id').split('_')[1];
 
-                    cache[todoId] = $el; //сильно ускоряющий костыль
+                    cache[todoId] = $el; //немного ускоряющий костыль
                     todos[todoId] = ({ priority: 0, todolist: todolistId });
                 });
 
@@ -42,10 +51,43 @@ function init() {
         return todos;
     }
 
+    function renderList() {
+        $('.todo').each(function (i, el) {
+            var $el = $(el);
+
+            $('.todolist[id=todolist_'+ storage.get($el.data('id')).todolist +'] .todos').append($el);
+        });
+        toggleTodoLists(false);
+    }
+
+    function renderSorted() {
+        $('.todo').sort(function(a,b) {
+            var first = $(a).data('priority'),
+                second = $(b).data('priority');
+
+            if (first < second) return 1;
+            if (first > second) return -1;
+
+            return 0;
+        }).appendTo('.todolist.priority-sorted .todos');
+        toggleTodoLists(true);
+    }
+
+    function toggleTodoLists(prioritySorted) {
+        if(prioritySorted) {
+            $('.todolist:not(.priority-sorted)').hide();
+            $('[data-behavior=new_todolist]').prop('disabled', true).addClass('new-todolist-disabled');
+        } else {
+            $('.todolist:not(.priority-sorted)').show();
+            $('[data-behavior=new_todolist]').prop('disabled', false).removeClass('new-todolist-disabled');
+        }
+    }
+
     function render() {
 
         Object.keys(cache).forEach(function(id) {
             var todo = storage.get(id),
+                $el = cache[id],
                 balloon,
                 popup = $('<span class="balloon right_side expanded_content priority-baloon">')
                     .append($('<span class="arrow">'))
@@ -69,7 +111,7 @@ function init() {
                         visibility: 'hidden'
                     })
                     .append($('<a href="#" data-behavior="expand_on_click">').text('Set priority'))
-                    .append(popup)
+                    .append(popup);
 
             } else {
                 balloon = $('<span>')
@@ -81,8 +123,9 @@ function init() {
                     .append(popup);
             }
 
-            cache[id].find('.priority').remove();
-            cache[id].find('.wrapper').append(balloon);
+            $el.find('.priority').remove();
+            $el.find('.wrapper').append(balloon);
+            $el.data({ 'id': id, priority: todo.priority });
         });
 
         $('.priority-baloon a').click(function(e) {
