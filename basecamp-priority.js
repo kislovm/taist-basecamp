@@ -4,28 +4,17 @@ function init() {
 
 
     function init(api) {
-        var checkbox;
+        initialRender();
 
         storage.init(api, parse(), function() {
-            render();
+            renderPriorities();
 
             api.wait.elementRender('.todo:not(.processed)', function() {
-                storage.add(parse(), render);
+                storage.add(parse(), renderPriorities);
             });
 
         });
 
-        $('.todolists')
-            .prepend('<div class="priority-sort" >' +
-                '<input type="checkbox" id="priority-sort"><label for="priority-sort">Sort by priority</label>' +
-            '</div>')
-            .prepend('<article class="todolist priority-sorted"><ul class="todos"></article>');
-
-        checkbox = $('#priority-sort');
-
-        checkbox.change(function() {
-            checkbox.is(':checked') ? renderSorted() : renderList();
-        });
     }
 
     function parse() {
@@ -49,6 +38,23 @@ function init() {
         }
 
         return todos;
+    }
+
+    function initialRender() {
+        var checkbox;
+
+
+        $('.todolists')
+            .prepend('<div class="priority-sort" >' +
+                '<input type="checkbox" id="priority-sort"><label for="priority-sort">Sort by priority</label>' +
+            '</div>')
+            .prepend('<article class="todolist priority-sorted"><ul class="todos"></article>');
+
+        checkbox = $('#priority-sort');
+
+        checkbox.change(function() {
+            checkbox.is(':checked') ? renderSorted() : renderList();
+        });
     }
 
     function renderList() {
@@ -83,7 +89,7 @@ function init() {
         }
     }
 
-    function render() {
+    function renderPriorities() {
 
         Object.keys(cache).forEach(function(id) {
             var todo = storage.get(id),
@@ -133,7 +139,7 @@ function init() {
 
             e.preventDefault();
 
-            storage.change($el.data('id'), $el.data('val'), render);
+            storage.change($el.data('id'), $el.data('val'), renderPriorities);
         });
 
         $('.todo').addClass('processed');
