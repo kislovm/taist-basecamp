@@ -37,6 +37,7 @@ function init() {
             var todo = storage.get(id),
                 balloon;
 
+
             if(!todo.priority) {
                 balloon = $('<span>')
                     .attr({
@@ -48,6 +49,13 @@ function init() {
                         visibility: 'hidden'
                     })
                     .text('Set priority');
+            } else {
+                balloon = $('<span>')
+                    .attr({
+                        class: 'pill has-balloon priority',
+                        'data-behavior': 'expandable'
+                    })
+                    .text('Priority: ' + todo.priority);
             }
 
             cache[id].find('.wrapper').append(balloon);
@@ -68,6 +76,7 @@ function init() {
         },
 
         get: function(id) {
+
             return this.todos[id];
         },
 
