@@ -24,6 +24,10 @@ div.priority-select a:hover {
     z-index: 999;
 }
 
+.priority-sorted {
+    margin-top: 30px;
+}
+
 .priority-sort input {
     margin: 5px;
 }
