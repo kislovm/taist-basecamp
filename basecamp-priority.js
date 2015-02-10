@@ -42,13 +42,13 @@ function init() {
                 balloon = $('<span>')
                     .attr({
                         class: 'pill has_balloon priority blank',
-                        'data-behavior': 'hover_content expandable',
+                        'data-behavior': 'hover_content expandable expand_exclusively',
                         'data-hovercontent-strategy': 'visibility'
                     })
                     .css({
                         visibility: 'hidden'
                     })
-                    .append($('<a data-behavior="expand_on_click">').text('Set priority'))
+                    .append($('<a href="#" data-behavior="expand_on_click">').text('Set priority'))
                     .append(
                         $('<span class="balloon right_side expanded_content priority-baloon">')
                             .append($('<span class="arrow">'))
