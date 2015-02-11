@@ -68,8 +68,8 @@ function init() {
 
     function renderSorted() {
         $('.todo').sort(function(a,b) {
-            var first = $(a).data('priority'),
-                second = $(b).data('priority');
+            var first = storage.get($(a).data('id')).priority,
+                second = storage.get($(b).data('id')).priority;
 
             if (first < second) return 1;
             if (first > second) return -1;
@@ -131,7 +131,7 @@ function init() {
 
             $el.find('.priority').remove();
             $el.find('.wrapper').append(balloon);
-            $el.data({ 'id': id, priority: todo.priority });
+            $el.data({ 'id': id });
         });
 
         $('.priority-baloon a').click(function(e) {
