@@ -10,7 +10,7 @@ function init() {
                 this.api = api;
                 this.$el = $('section.todos');
 
-                initialRender();
+                this.render();
 
                 storage.init(api, this.parse(), function() {
                     renderPriorities();
@@ -45,6 +45,31 @@ function init() {
                 }
 
                 return todos;
+            },
+
+            _getCheckbox: function() {
+                if(!this._checkbox) {
+                    this._checkbox = $('<div class="priority-sort" >' +
+                          '<input type="checkbox" id="priority-sort"><label for="priority-sort">Sort by priority</label>' +
+                    '</div>')
+                }
+
+                return this._checkbox;
+            },
+
+            bindEvents: function() {
+
+                this._getCheckbox().change(function() {
+                    checkbox.is(':checked') ? renderSorted() : renderList();
+                });
+            },
+
+            render: function() {
+                $('.todolists')
+                    .prepend(this._getCheckbox())
+                    .prepend('<article class="todolist priority-sorted"><ul class="todos"></article>');
+
+                this.bindEvents();
             }
         };
 
@@ -52,22 +77,6 @@ function init() {
 
     };
 
-    function initialRender() {
-        var checkbox;
-
-
-        $('.todolists')
-            .prepend('<div class="priority-sort" >' +
-                '<input type="checkbox" id="priority-sort"><label for="priority-sort">Sort by priority</label>' +
-            '</div>')
-            .prepend('<article class="todolist priority-sorted"><ul class="todos"></article>');
-
-        checkbox = $('#priority-sort');
-
-        checkbox.change(function() {
-            checkbox.is(':checked') ? renderSorted() : renderList();
-        });
-    }
 
     function renderList() {
         $('.todo').each(function (i, el) {
