@@ -2,20 +2,31 @@ function init() {
     var storage,
         cache = {};
 
+    var App = function(api) {
 
-    function init(api) {
-        initialRender();
+        var app = {
 
-        storage.init(api, parse(), function() {
-            renderPriorities();
+            init: function(api) {
+                this.api = api;
 
-            api.wait.elementRender('.todo:not(.processed)', function() {
-                storage.add(parse(), renderPriorities);
-            });
+                initialRender();
 
-        });
+                storage.init(api, parse(), function() {
+                    renderPriorities();
 
-    }
+                    api.wait.elementRender('.todo:not(.processed)', function() {
+                        storage.add(parse(), renderPriorities);
+                    });
+
+                });
+
+                return this;
+            }
+        };
+
+        return app.init(api);
+
+    };
 
     function parse() {
         var todolists = $('article.todolist:not(.new):not(.priority-sorted)'),
@@ -188,7 +199,7 @@ function init() {
 
     return  {
         start: function(taistApi) {
-            init(taistApi);
+            App(taistApi);
 
         }
     };
