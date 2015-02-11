@@ -52,20 +52,6 @@ function init() {
 
     };
 
-    var Todo = function() {
-
-        var todo = {
-
-            init: function() {
-
-            }
-        };
-
-        return this.init();
-    };
-
-
-
     function initialRender() {
         var checkbox;
 
