@@ -8,19 +8,43 @@ function init() {
 
             init: function(api) {
                 this.api = api;
+                this.$el = $('section.todos');
 
                 initialRender();
 
-                storage.init(api, parse(), function() {
+                storage.init(api, this.parse(), function() {
                     renderPriorities();
 
                     api.wait.elementRender('.todo:not(.processed)', function() {
-                        storage.add(parse(), renderPriorities);
+                        storage.add(this.parse(), renderPriorities);
                     });
 
                 });
 
                 return this;
+            },
+
+            parse: function() {
+                var todolists = this.$el.find('article.todolist:not(.new):not(.priority-sorted)'),
+                    todos = {};
+
+                if(todolists.length) {
+                    todolists.each(function(i, el) {
+                        var $el = $(el),
+                            todolistId = $el.attr('id').split('_')[1];
+
+                        $el.find('.todo').each(function(i, el) {
+                            var $el = $(el),
+                                todoId = $el.attr('id').split('_')[1];
+
+                            cache[todoId] = $el; //немного ускоряющий костыль
+                            todos[todoId] = ({ priority: 0, todolist: todolistId });
+                        });
+
+                    });
+                }
+
+                return todos;
             }
         };
 
@@ -28,28 +52,19 @@ function init() {
 
     };
 
-    function parse() {
-        var todolists = $('article.todolist:not(.new):not(.priority-sorted)'),
-            todos = {};
+    var Todo = function() {
 
-        if(todolists.length) {
-            todolists.each(function(i, el) {
-                var $el = $(el),
-                    todolistId = $el.attr('id').split('_')[1];
+        var todo = {
 
-                $el.find('.todo').each(function(i, el) {
-                    var $el = $(el),
-                        todoId = $el.attr('id').split('_')[1];
+            init: function() {
 
-                    cache[todoId] = $el; //немного ускоряющий костыль
-                    todos[todoId] = ({ priority: 0, todolist: todolistId });
-                });
+            }
+        };
 
-            });
-        }
+        return this.init();
+    };
 
-        return todos;
-    }
+
 
     function initialRender() {
         var checkbox;
