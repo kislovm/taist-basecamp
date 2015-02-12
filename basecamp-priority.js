@@ -7,8 +7,11 @@ function init() {
         var app = {
 
             init: function(api) {
+                var _this = this;
+
                 this.api = api;
                 this.$el = $('section.todos');
+                this.todolists = [];
 
                 this.render();
 
@@ -16,7 +19,7 @@ function init() {
                     renderPriorities();
 
                     api.wait.elementRender('.todo:not(.processed)', function() {
-                        storage.add(this.parse(), renderPriorities);
+                        storage.add(_this.parse(), renderPriorities);
                     });
 
                 });
@@ -25,29 +28,22 @@ function init() {
             },
 
             parse: function() {
-                var todolists = this.$el.find('article.todolist:not(.new):not(.priority-sorted)'),
+                var _this = this,
+                    todolists = this.$el.find('article.todolist:not(.new):not(.priority-sorted)'),
                     todos = {};
 
-                if(todolists.length) {
                     todolists.each(function(i, el) {
-                        var $el = $(el),
-                            todolistId = $el.attr('id').split('_')[1];
+                        var todolist = Todolist($(el));
 
-                        $el.find('.todo').each(function(i, el) {
-                            var $el = $(el),
-                                todoId = $el.attr('id').split('_')[1];
+                        _this.todolists.push(todolist);
 
-                            cache[todoId] = $el; //немного ускоряющий костыль
-                            todos[todoId] = ({ priority: 0, todolist: todolistId });
-                        });
-
+                        $.extend(todos, todolist.parse());
                     });
-                }
 
                 return todos;
             },
 
-            _getCheckbox: function() {
+            _getControl: function() {
                 if(!this._checkbox) {
                     this._checkbox = $('<div class="priority-sort" >' +
                           '<input type="checkbox" id="priority-sort"><label for="priority-sort">Sort by priority</label>' +
@@ -57,16 +53,55 @@ function init() {
                 return this._checkbox;
             },
 
-            bindEvents: function() {
+            _getPriorityList: function() {
+                if(!this._priorityList) this._priorityList = PriorityList();
+            },
 
-                this._getCheckbox().change(function() {
-                    checkbox.is(':checked') ? renderSorted() : renderList();
+            bindEvents: function() {
+                var _this = this,
+                    checkbox = this._getControl().find('input[type=checkbox]');
+
+                checkbox.change(function() {
+                    checkbox.is(':checked') ? _this.renderSorted() : _this.renderList();
                 });
+            },
+
+            renderList: function() {
+                this.todolists.forEach(function(todolist) {
+                    todolist.render();
+                });
+
+                this.toggleTodoLists(false);
+            },
+
+            renderSorted: function () {
+                $('.todo').sort(function(a,b) {
+                    //var first = storage.get($(a).attr('id')).priority,
+                    //    second = storage.get($(b).attr('id')).priority;
+                    //
+                    //if (first < second) return 1;
+                    //if (first > second) return -1;
+
+                    return 0;
+                }).appendTo('.todolist.priority-sorted .todos');
+                this.toggleTodoLists(true);
+            },
+
+            toggleTodoLists: function(prioritySorted){
+                if(prioritySorted) {
+                    this.todolists.forEach(function(todolist) {
+                        todolist.toggle(false);
+                    });
+                    $('[data-behavior=new_todolist]').prop('disabled', true).addClass('new-todolist-disabled');
+                } else {
+                    $('.todolist:not(.priority-sorted)').show();
+                    $('[data-behavior=new_todolist]').prop('disabled', false).removeClass('new-todolist-disabled');
+                }
             },
 
             render: function() {
                 $('.todolists')
-                    .prepend(this._getCheckbox())
+                    .prepend(this._getControl())
                     .prepend('<article class="todolist priority-sorted"><ul class="todos"></article>');
 
                 this.bindEvents();
@@ -77,38 +112,52 @@ function init() {
 
     };
 
+    var Todolist = function($el) {
+        var todolist = {
 
-    function renderList() {
-        $('.todo').each(function (i, el) {
-            var $el = $(el);
+            init: function($el) {
+                this.$el = $el;
+                this.todos = [];
+                this.id = $el.attr('id').split('_')[1];
 
-            $('.todolist[id=todolist_'+ storage.get($el.data('id')).todolist +'] .todos').append($el);
-        });
-        toggleTodoLists(false);
-    }
+                $el.find('.todo').each(function(i) {
+                });
 
-    function renderSorted() {
-        $('.todo').sort(function(a,b) {
-            var first = storage.get($(a).data('id')).priority,
-                second = storage.get($(b).data('id')).priority;
+                return this;
+            },
 
-            if (first < second) return 1;
-            if (first > second) return -1;
+            parse: function() {
+                var _this = this,
+                    todos = {};
 
-            return 0;
-        }).appendTo('.todolist.priority-sorted .todos');
-        toggleTodoLists(true);
-    }
+                this.$el.find('.todo').each(function(i, el) {
+                    var $el = $(el),
+                        todoId = $el.attr('id').split('_')[1];
 
-    function toggleTodoLists(prioritySorted) {
-        if(prioritySorted) {
-            $('.todolist:not(.priority-sorted)').hide();
-            $('[data-behavior=new_todolist]').prop('disabled', true).addClass('new-todolist-disabled');
-        } else {
-            $('.todolist:not(.priority-sorted)').show();
-            $('[data-behavior=new_todolist]').prop('disabled', false).removeClass('new-todolist-disabled');
-        }
-    }
+                    _this.todos.push(todoId);
+                    cache[todoId] = $el; //немного ускоряющий костыль
+                    todos[todoId] = ({ priority: 0, todolist: _this.id });
+
+                });
+
+                return todos;
+            },
+
+            toggle: function(show) {
+                show ? this.$el.show() : this.$el.hide();
+            },
+
+            render: function() {
+                this.todos.forEach(function(todoId) {
+                    this.$el.find('.todos').append(cache[todoId]);
+                }, this);
+
+                this.toggle(true);
+            }
+        };
+
+        return todolist.init($el);
+    };
 
     function renderPriorities() {
 
