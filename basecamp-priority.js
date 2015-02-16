@@ -1,46 +1,48 @@
 function init() {
     var storage,
-        cache = {};
+        TODOS;
 
-    var App = function(api) {
+    var App = function(el, api) {
 
         var app = {
 
-            init: function(api) {
+            init: function(el, api) {
                 var _this = this;
 
-                this.api = api;
-                this.$el = $('section.todos');
+                this.$el = el;
                 this.todolists = [];
 
-                this.render();
+                storage.init(api, function() {
+                    storage.addCalback(function() {
+                        _this.state == 'priority-list' &&
+                            _this._getPriorityList().render()
+                    });
+                    _this.render();
 
-                storage.init(api, this.parse(), function() {
-                    renderPriorities();
+                    api.wait.elementRender('.todo.show', function(el) {
+                        var id = el.attr('id').split('_')[1],
+                            data = {};
 
-                    api.wait.elementRender('.todo:not(.processed)', function() {
-                        storage.add(_this.parse(), renderPriorities);
+                        data[id] = storage.get(id) || { priority: 0};
+
+                        storage.add(data, function() { //Тут хотелось бы ускорить добавив
+                            var todo = Todo(el, id, data[id].priority);
+                            TODOS[id] = todo;
+
+                            todo.render();
+
+                            api.wait.elementRender(function() {
+                                    return _this.$el.find('.todolist:not(.priority-sorted):not(.new):not(.copy_options)')
+                                },
+                                function(el) {
+                                _this.todolists.push(Todolist(el));
+                            });
+                        });
                     });
 
                 });
 
                 return this;
-            },
-
-            parse: function() {
-                var _this = this,
-                    todolists = this.$el.find('article.todolist:not(.new):not(.priority-sorted)'),
-                    todos = {};
-
-                    todolists.each(function(i, el) {
-                        var todolist = Todolist($(el));
-
-                        _this.todolists.push(todolist);
-
-                        $.extend(todos, todolist.parse());
-                    });
-
-                return todos;
             },
 
             _getControl: function() {
@@ -54,7 +56,10 @@ function init() {
             },
 
             _getPriorityList: function() {
-                if(!this._priorityList) this._priorityList = PriorityList();
+                if(!this._priorityList)
+                    this._priorityList = PriorityList($('<article class="todolist priority-sorted"><ul class="todos"></article>'));
+
+                return this._priorityList
             },
 
             bindEvents: function() {
@@ -75,72 +80,131 @@ function init() {
             },
 
             renderSorted: function () {
-                $('.todo').sort(function(a,b) {
-                    //var first = storage.get($(a).attr('id')).priority,
-                    //    second = storage.get($(b).attr('id')).priority;
-                    //
-                    //if (first < second) return 1;
-                    //if (first > second) return -1;
+                this._getPriorityList().render();
 
-                    return 0;
-                }).appendTo('.todolist.priority-sorted .todos');
                 this.toggleTodoLists(true);
             },
+
+            state: 'todolists',
 
             toggleTodoLists: function(prioritySorted){
                 if(prioritySorted) {
                     this.todolists.forEach(function(todolist) {
                         todolist.toggle(false);
                     });
+                    this._getPriorityList().toggle(true);
                     $('[data-behavior=new_todolist]').prop('disabled', true).addClass('new-todolist-disabled');
+                    this.state = 'priority-list';
                 } else {
-                    $('.todolist:not(.priority-sorted)').show();
+                    this.todolists.forEach(function(todolist) {
+                        todolist.toggle(true);
+                    });
+                    this._getPriorityList().toggle(false);
                     $('[data-behavior=new_todolist]').prop('disabled', false).removeClass('new-todolist-disabled');
+                    this.state = 'todolists';
                 }
             },
 
             render: function() {
-                $('.todolists')
-                    .prepend(this._getControl())
-                    .prepend('<article class="todolist priority-sorted"><ul class="todos"></article>');
+                this._getControl().insertBefore(this.$el.find('.todolist:first'));
+                this._getPriorityList().$el.insertBefore(this.$el.find('.todolist:first'));
 
+                this.toggleTodoLists(false);
                 this.bindEvents();
             }
         };
 
-        return app.init(api);
+        return app.init(el, api);
 
+    };
+
+    var PriorityList = function($el) {
+        var priorityList = {
+
+            init: function($el) {
+                this.$el = $el;
+
+                return this;
+            },
+
+            toggle: function(show) {
+                show ? this.$el.show() : this.$el.hide();
+            },
+
+            _sortFunction: function(a,b) {
+                var first = a.getPriority() || 999,
+                    second = b.getPriority() || 999; //Хак для вывода пустых приоритетов
+
+                if (first > second) return 1;
+                if (first < second) return -1;
+
+                return 0;
+            },
+
+            _getTodos: function() {
+                return Object.keys(TODOS).map(function(key) {
+                    var todo = TODOS[key];
+
+                    if(todo.model.completed) return;
+
+                    todo.id = key;
+
+                    return todo;
+                });
+            },
+
+            _getTodosList: function() {
+                if(!this._todosList) this._todosList = this.$el.find('.todos');
+                return this._todosList;
+            },
+
+            render: function() {
+                var todosList = this._getTodosList(),
+                currentPriority;
+
+                todosList.children().detach();
+
+                this._getTodos()
+                    .sort(this._sortFunction)
+                    .forEach(function(todo) {
+                        if(!todo) return;
+
+                        var priority = todo.getPriority();
+
+                        if(currentPriority != priority) {
+                            currentPriority = priority;
+                            todosList.append('<div class="priority-separator">Priority: ' + (priority || 'No') + '</div>');
+                        }
+
+                        todosList.append(todo.$el);
+
+                    }, this);
+            }
+        };
+
+        return priorityList.init($el);
     };
 
     var Todolist = function($el) {
         var todolist = {
 
             init: function($el) {
+                var _this = this;
+
                 this.$el = $el;
                 this.todos = [];
                 this.id = $el.attr('id').split('_')[1];
 
-                $el.find('.todo').each(function(i) {
+                this.$el.find('.todo.show').each(function(i, el) {
+                    _this.todos.push($(el).attr('id').split('_')[1]);
                 });
 
                 return this;
             },
 
-            parse: function() {
-                var _this = this,
-                    todos = {};
-
-                this.$el.find('.todo').each(function(i, el) {
-                    var $el = $(el),
-                        todoId = $el.attr('id').split('_')[1];
-
-                    _this.todos.push(todoId);
-                    cache[todoId] = $el; //немного ускоряющий костыль
-                    todos[todoId] = ({ priority: 0, todolist: _this.id });
-
-                });
-
-                return todos;
+            _getTodosList: function() {
+                if(!this._todosList) this._todosList = this.$el.find('.todos');
+                return this._todosList;
             },
 
             toggle: function(show) {
@@ -148,8 +212,12 @@ function init() {
             },
 
             render: function() {
-                this.todos.forEach(function(todoId) {
-                    this.$el.find('.todos').append(cache[todoId]);
+                this.todos.forEach(function(id) {
+                    var todo = TODOS[id];
+
+                    if(todo.model.completed) return;
+
+                    this._getTodosList().append(todo.$el);
                 }, this);
 
                 this.toggle(true);
@@ -159,80 +227,119 @@ function init() {
         return todolist.init($el);
     };
 
-    function renderPriorities() {
+    var Todo = function($el, id) {
 
-        Object.keys(cache).forEach(function(id) {
-            var todo = storage.get(id),
-                $el = cache[id],
-                balloon,
-                popup = $('<span class="balloon right_side expanded_content priority-baloon">')
-                    .append($('<span class="arrow">'))
-                    .append($('<span class="arrow">'))
-                    .append($('<label>Set priority</label>'))
-                    .append($('<div class="priority-select">(' +
-                        [1,2,3].map(function(i) {
-                            return '<a href="#" data-id="' + id + '" data-val="'+ i +'">' + i + '</a>'
-                        }) +
-                    ')</div>'));
+        var todo = {
+            init: function($el, id) {
+                this.$el = $el;
+                this.id = id;
 
+                this.model = storage.get(id);
 
-            if(!todo.priority) {
-                balloon = $('<span>')
-                    .attr({
-                        class: 'pill has_balloon priority blank',
-                        'data-behavior': 'hover_content expandable expand_exclusively',
-                        'data-hovercontent-strategy': 'visibility'
-                    })
-                    .css({
-                        visibility: 'hidden'
-                    })
-                    .append($('<a href="#" data-behavior="expand_on_click">').text('Set priority'))
-                    .append(popup);
+                return this;
+            },
 
-            } else {
-                balloon = $('<span>')
-                    .attr({
-                        class: 'pill has_balloon priority',
-                        'data-behavior': 'expandable expand_exclusively'
-                    })
-                    .append($('<a href="#" data-behavior="expand_on_click">').text('Priority: ' + todo.priority))
-                    .append(popup);
+            getPriority: function() {
+                return this.model.priority;
+            },
+
+            _popup: $('<span class="balloon right_side expanded_content priority-baloon">')
+                .append($('<span class="arrow">'))
+                .append($('<span class="arrow">'))
+                .append($('<label>Set priority</label>'))
+                .append($('<div class="priority-select">(' +
+                    [1,2,3].map(function(i) {
+                        return '<a href="#" data-val="'+ i +'">' + i + '</a>'
+                    }) +
+                    ')' +
+                    '<a href="#" data-val="0">x</a>' +
+                '</div>')),
+
+            _getBalloon: function() {
+                var priority = this.getPriority();
+
+                if(!priority) {
+                    return $('<span>')
+                        .attr({
+                            class: 'pill has_balloon priority blank',
+                            'data-behavior': 'hover_content expandable expand_exclusively',
+                            'data-hovercontent-strategy': 'visibility'
+                        })
+                        .css({
+                            visibility: 'hidden'
+                        })
+                        .append($('<a href="#" data-behavior="expand_on_click">').text('Set priority'))
+                        .append(this._popup);
+
+                } else {
+                    return $('<span>')
+                        .attr({
+                            class: 'pill has_balloon priority',
+                            'data-behavior': 'expandable expand_exclusively'
+                        })
+                        .append($('<a href="#" data-behavior="expand_on_click">').text('Priority: ' + priority))
+                        .append(this._popup);
+                }
+            },
+
+            bindEvents: function() {
+                var completeCheckbox = $el.find('input[name=todo_complete]'),
+                    _this = this,
+                    id = this.id;
+
+                completeCheckbox.change(function() {
+                      storage.change(id, { completed: completeCheckbox.is(':checked') }, function() { });
+                  }).trigger('change');
+
+                  $el.find('.priority-baloon a').click(function(e) {
+                      var $el = $(e.target);
+
+                      e.preventDefault();
+
+                      storage.change(id, { priority: $el.data('val') }, function() { _this.render() });
+                  });
+            },
+
+            render: function() {
+                var $el = this.$el;
+
+                $el.find('.priority').remove();
+                $el.find('.wrapper').append(this._getBalloon());
+
+                this.bindEvents();
             }
+        };
 
-            $el.find('.priority').remove();
-            $el.find('.wrapper').append(balloon);
-            $el.data({ 'id': id });
-        });
-
-        $('.priority-baloon a').click(function(e) {
-            var $el = $(e.target);
-
-            e.preventDefault();
-
-            storage.change($el.data('id'), $el.data('val'), renderPriorities);
-        });
-
-        $('.todo').addClass('processed');
-
-    }
+        return todo.init($el, id)
+    };
 
     storage = {
 
         save: function(callback) {
-            this.storage.set('todos', this.todos, callback);
+            var _this = this;
+
+            if(this._timeout) clearTimeout(this._timeout);
+
+            this._timeout = setTimeout(function(){ _this._save() }, 100);
+            callback();
+        },
+
+        _save: function() {
+            this.storage.set('todos', this.todos, function() {});
         },
 
         add: function(todos, callback) {
-            $.extend(todos, this.todos);
+            $.extend(todos || {}, this.todos);
 
             this.todos = todos;
 
             this.save(callback);
         },
 
-        change: function(id, priority, callback) {
-            this.todos[id].priority = priority;
+        change: function(id, data, callback) {
+            this.todos[id] = $.extend(this.todos[id], data);
 
+            this._onChange();
             this.save(callback);
         },
 
@@ -241,14 +348,27 @@ function init() {
             return this.todos[id];
         },
 
-        init: function(api, todos, callback) {
+        _callbacks: [],
+
+        addCalback: function(callback) {
+            this._callbacks.push(callback)
+        },
+
+        _onChange: function() {
+            this._callbacks.forEach(function(callback) {
+                setTimeout(callback, 0);
+            });
+        },
+
+        init: function(api, callback) {
             var _this = this;
 
             this.storage = api.userData;
 
             this.storage.get('todos', function(error, data) {
                 _this.todos = data || {};
-                _this.add(todos, callback);
+
+                callback();
             });
 
             return this;
@@ -258,8 +378,10 @@ function init() {
 
     return  {
         start: function(taistApi) {
-            App(taistApi);
-
+            taistApi.wait.elementRender('section.todos', function(el) {
+                TODOS = {};
+                App(el, taistApi)
+            });
         }
     };
 

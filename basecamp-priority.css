@@ -3,6 +3,10 @@
     padding-top: 30px;
 }
 
+section.todos {
+    position: relative;
+}
+
 .priority-select {
     display: inline-block;
     margin-left: 5px;
@@ -19,8 +23,8 @@ div.priority-select a:hover {
 
 .priority-sort {
     position: absolute;
-    right:5px;
-    top: -10px;
+    right: -20px;
+    top: -20px;
     z-index: 999;
 }
 
@@ -28,8 +32,16 @@ div.priority-select a:hover {
     margin-top: 30px;
 }
 
+.priority-sorted input[name=todo_complete] {
+    display: none;
+}
+
 .priority-sort input {
     margin: 5px;
+}
+
+.priority-separator {
+    line-height: 3em;
 }
 
 .new-todolist-disabled {
